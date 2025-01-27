@@ -25,19 +25,17 @@ logging.info(f"GPU használata: {device}")
 
 def update_langchain_index(document_store):
     """LangChain FAISS index frissítése."""
-    index_faiss_path = f"{VECTORSTORE_PATH}/index.faiss"
-    index_pkl_path = f"{VECTORSTORE_PATH}/index.pkl"
-
-    # Ellenőrizzük, hogy mindkét fájl létezik-e
-    if not (os.path.exists(index_faiss_path) and os.path.exists(index_pkl_path)):
-        logging.info("LangChain FAISS index nem található vagy hiányos. Új index létrehozása...")
+    if not (os.path.exists(f"{VECTORSTORE_PATH}/index.faiss") and os.path.exists(f"{VECTORSTORE_PATH}/index.pkl")):
+        logging.info("LangChain FAISS index nem található. Új index létrehozása...")
 
         # Dokumentumok kinyerése a Haystack dokumentumtárból
         documents = [
-            {"page_content": doc.content, "metadata": doc.meta} for doc in document_store.get_all_documents()
+            Document(
+                page_content=doc.content,
+                metadata=doc.meta
+            ) for doc in document_store.get_all_documents()
         ]
 
-        # LangChain index létrehozása
         embedding = SentenceTransformerEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
         vectorstore = FAISS.from_documents(documents, embedding)
         vectorstore.save_local(VECTORSTORE_PATH)
