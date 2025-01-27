@@ -10,7 +10,7 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.schema import Document  # Document importálása
 from haystack.nodes import FARMReader
-from search import search_documents
+
 
 
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     reader = FARMReader(model_name_or_path="deepset/roberta-base-squad2", use_gpu=torch.cuda.is_available())    
 
     # Teszt keresés
-    query = "1. Simple 70 Period Moving Average (closed)"
+    query = "Moving Average"
     results = search_documents(query, retriever, reader, top_k_retriever=10, top_k_reader=5)
 
     if results:
