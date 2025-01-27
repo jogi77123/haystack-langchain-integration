@@ -9,6 +9,7 @@ from haystack.nodes import EmbeddingRetriever
 from langchain.vectorstores import FAISS
 from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.schema import Document  # Document importálása
+from haystack.nodes import FARMReader
 
 
 # Logging beállítása
@@ -93,6 +94,9 @@ if __name__ == "__main__":
         logging.info("Hash fájl sikeresen létrehozva.")
     else:
         logging.error("Hash fájl nem található.")
+
+    # Reader inicializálása
+    reader = FARMReader(model_name_or_path="deepset/roberta-base-squad2", use_gpu=torch.cuda.is_available())    
 
     # Keresés indítása
     query = "1. Simple 70 Period Moving Average (closed)"
