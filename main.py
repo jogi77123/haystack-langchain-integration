@@ -6,6 +6,7 @@ from haystack.document_stores import FAISSDocumentStore
 from haystack.nodes import EmbeddingRetriever
 from langchain.vectorstores import FAISS
 from langchain.embeddings import SentenceTransformerEmbeddings
+from modules.indexer import initialize_faiss_store
 
 # Logging beállítása
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -48,24 +49,15 @@ def update_langchain_index(document_store):
 if __name__ == "__main__":
     logging.info("Haystack dokumentumtár inicializálása...")
 
+    # FAISS tároló inicializálása a külön függvénnyel
     try:
-        # FAISS dokumentumtár inicializálása
-        document_store = FAISSDocumentStore(
+        document_store = initialize_faiss_store(
             sql_url=SQL_URL,
-            faiss_index_factory_str="Flat",
-            embedding_dim=EMBEDDING_DIM,
-            index="document",
-            validate_index_sync=False
+            embedding_dim=EMBEDDING_DIM
         )
-    except Exception as e:
-        logging.warning(f"FAISS index hiba: {e}")
-        logging.info("Új FAISS index generálása...")
-        document_store = FAISSDocumentStore(
-            sql_url=SQL_URL,
-            faiss_index_factory_str="Flat",
-            embedding_dim=EMBEDDING_DIM,
-            index="document"
-        )
+    except RuntimeError as e:
+        logging.error(f"FAISS tároló inicializálási hiba: {e}")
+        exit(1)
 
     # EmbeddingRetriever inicializálása
     retriever = EmbeddingRetriever(

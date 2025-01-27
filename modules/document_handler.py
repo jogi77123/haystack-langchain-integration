@@ -18,19 +18,24 @@ def load_hashes(hash_file):
     return set()
 
 def save_hashes(hashes, hash_file):
-    """Hash-ek mentése fájlba, a meglévő tartalom megtartásával."""
-    try:
-        if os.path.exists(hash_file):
+    """Hash-ek mentése fájlba úgy, hogy a meglévő adatokat ne írjuk felül."""
+    # Betöltjük a meglévő hash-eket, ha a fájl létezik
+    existing_hashes = set()
+    if os.path.exists(hash_file):
+        try:
             with open(hash_file, "r") as f:
                 existing_hashes = set(json.load(f))
-        else:
-            existing_hashes = set()
+        except Exception as e:
+            logging.error(f"Hiba a meglévő hash-ek betöltésekor: {e}")
+    
+    # Egyesítjük a meglévő és új hash-eket
+    all_hashes = existing_hashes.union(hashes)
 
-        # Új hash-ek hozzáadása
-        combined_hashes = existing_hashes.union(hashes)
-
+    # Új hash-ek mentése
+    try:
         with open(hash_file, "w") as f:
-            json.dump(list(combined_hashes), f)
+            json.dump(list(all_hashes), f)
+        logging.info(f"Hash-ek sikeresen mentve a fájlba: {hash_file}")
     except Exception as e:
         logging.error(f"Hiba a hash fájl mentésekor: {e}")
 
@@ -92,6 +97,7 @@ def index_documents_recursive(path, document_store, document_hashes, retriever, 
         if doc_hash in document_hashes:
             logging.info(f"Dokumentum már indexelve: {file_path}")
             continue
+        document_hashes.add(doc_hash)
 
         # Új dokumentum feldolgozása
         document_hashes.add(doc_hash)
