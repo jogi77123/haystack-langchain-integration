@@ -10,6 +10,8 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.schema import Document  # Document importálása
 from haystack.nodes import FARMReader
+from search import search_documents
+
 
 
 # Logging beállítása
@@ -98,13 +100,19 @@ if __name__ == "__main__":
     # Reader inicializálása
     reader = FARMReader(model_name_or_path="deepset/roberta-base-squad2", use_gpu=torch.cuda.is_available())    
 
-    # Keresés indítása
+    # Teszt keresés
     query = "1. Simple 70 Period Moving Average (closed)"
     results = search_documents(query, retriever, reader, top_k_retriever=10, top_k_reader=5)
 
-    for result in results:
-        print(f"Válasz: {result['answer']}")
-        print(f"Dokumentum: {result['meta']['name']}")
-        print(f"Egyéb információ: {result}")
+    if results:
+        logging.info(f"Keresési eredmények a kérdésre: '{query}'")
+        for result in results:
+            answer = result.get('answer', 'Nincs válasz')  # Ha nincs válasz, azt írja ki: "Nincs válasz"
+            score = result.get('score', 0)  # Ha nincs pontszám, akkor 0-t állít be
+            document_name = result.get('meta', {}).get('name', 'Ismeretlen dokumentum')  # Biztonságos meta-kezelés
+            logging.info(f"- Válasz: {answer} | Pontosság: {score:.2f} | Dokumentum: {document_name}")
+    else:
+        logging.info(f"Nincs találat a kérdésre: '{query}'")
+
 
 
