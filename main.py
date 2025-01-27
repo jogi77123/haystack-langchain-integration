@@ -2,11 +2,14 @@ import logging
 import os
 import torch
 from modules.document_handler import load_hashes, save_hashes, index_documents_recursive
+from modules.indexer import initialize_faiss_store
+from modules.search import search_documents  # HIBA JAVÍTÁSA: search_documents importálása
 from haystack.document_stores import FAISSDocumentStore
 from haystack.nodes import EmbeddingRetriever
 from langchain.vectorstores import FAISS
 from langchain.embeddings import SentenceTransformerEmbeddings
-from langchain.schema import Document  # HIBA JAVÍTÁSA: Document importálása
+from langchain.schema import Document  # Document importálása
+
 
 # Logging beállítása
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -93,7 +96,7 @@ if __name__ == "__main__":
 
     # Keresés indítása
     query = "1. Simple 70 Period Moving Average (closed)"
-    results = search_documents(query, retriever, reader)
+    results = search_documents(query, retriever, reader, top_k_retriever=10, top_k_reader=5)
 
     for result in results:
         print(f"Válasz: {result['answer']}")
