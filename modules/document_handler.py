@@ -18,10 +18,19 @@ def load_hashes(hash_file):
     return set()
 
 def save_hashes(hashes, hash_file):
-    """Hash-ek mentése fájlba."""
+    """Hash-ek mentése fájlba, a meglévő tartalom megtartásával."""
     try:
+        if os.path.exists(hash_file):
+            with open(hash_file, "r") as f:
+                existing_hashes = set(json.load(f))
+        else:
+            existing_hashes = set()
+
+        # Új hash-ek hozzáadása
+        combined_hashes = existing_hashes.union(hashes)
+
         with open(hash_file, "w") as f:
-            json.dump(list(hashes), f)
+            json.dump(list(combined_hashes), f)
     except Exception as e:
         logging.error(f"Hiba a hash fájl mentésekor: {e}")
 

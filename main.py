@@ -2,7 +2,6 @@ import logging
 import os
 import torch
 from modules.document_handler import load_hashes, save_hashes, index_documents_recursive
-from modules.indexer import initialize_faiss_store
 from haystack.document_stores import FAISSDocumentStore
 from haystack.nodes import EmbeddingRetriever
 from langchain.vectorstores import FAISS
@@ -23,17 +22,25 @@ VECTORSTORE_PATH = "/mnt/c/GPT AI/LangChain/vectorstore"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 logging.info(f"GPU használata: {device}")
 
-def update_langchain_index():
+def update_langchain_index(document_store):
     """LangChain FAISS index frissítése."""
-    if not os.path.exists(f"{VECTORSTORE_PATH}/index.faiss"):
-        logging.info("LangChain FAISS index nem található. Új index létrehozása...")
+    index_faiss_path = f"{VECTORSTORE_PATH}/index.faiss"
+    index_pkl_path = f"{VECTORSTORE_PATH}/index.pkl"
+
+    # Ellenőrizzük, hogy mindkét fájl létezik-e
+    if not (os.path.exists(index_faiss_path) and os.path.exists(index_pkl_path)):
+        logging.info("LangChain FAISS index nem található vagy hiányos. Új index létrehozása...")
+
+        # Dokumentumok kinyerése a Haystack dokumentumtárból
         documents = [
-            {"page_content": "Példa dokumentum szöveg.", "metadata": {"source": "forrás1"}},
-            {"page_content": "További példa tartalom.", "metadata": {"source": "forrás2"}},
+            {"page_content": doc.content, "metadata": doc.meta} for doc in document_store.get_all_documents()
         ]
-        embedding = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+
+        # LangChain index létrehozása
+        embedding = SentenceTransformerEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
         vectorstore = FAISS.from_documents(documents, embedding)
         vectorstore.save_local(VECTORSTORE_PATH)
+
         logging.info("LangChain FAISS index sikeresen létrehozva.")
     else:
         logging.info("LangChain FAISS index már létezik.")
@@ -73,22 +80,14 @@ if __name__ == "__main__":
 
     # Dokumentumok indexelése
     logging.info("Dokumentumok indexelése...")
-    index_documents_recursive(LIBRARY_PATH, document_store, document_hashes, retriever, BATCH_SIZE)
-
-    # FAISS index mentése
-    logging.info("FAISS index mentése...")
-    try:
-        document_store.save(f"/mnt/c/GPT AI/Library index/faiss_index.bin")
-        logging.info("FAISS index sikeresen mentve.")
-    except Exception as e:
-        logging.error(f"Hiba a FAISS index mentésekor: {e}")
+    index_documents_recursive(LIBRARY_PATH, document_store, document_hashes, retriever, BATCH_SIZE, HASHES_FILE)
 
     # LangChain FAISS index frissítése
-    update_langchain_index()
+    update_langchain_index(document_store)
 
     # Hash fájl ellenőrzése
     logging.info("Hash fájl ellenőrzése...")
     if os.path.exists(HASHES_FILE):
-        logging.info("Hash fájl sikeresen létrejött.")
+        logging.info("Hash fájl sikeresen létrehozva.")
     else:
         logging.error("Hash fájl nem található.")

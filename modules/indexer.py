@@ -47,8 +47,8 @@ def initialize_faiss_store(sql_url, faiss_index_path, embedding_dim, retriever_m
         logging.error(f"Nem sikerült inicializálni az FAISS dokumentumtárat: {e}")
         raise e
 
-def index_documents_recursive(path, document_store, document_hashes):
-    """Dokumentumok rekurzív indexelése, csak az új fájlokat hozzáadva."""
+def index_documents_recursive(path, document_store, document_hashes, retriever, batch_size, hash_file):
+    """Dokumentumok rekurzív indexelése."""
     files = []
     for root, _, file_names in os.walk(path):
         for file_name in file_names:
@@ -59,11 +59,13 @@ def index_documents_recursive(path, document_store, document_hashes):
 
     logging.info(f"{len(files)} fájl található a mappában. Ellenőrzés kezdése...")
     new_documents = []
+    failed_files = []
 
-    for file_path in files:
+    for i, file_path in enumerate(files, start=1):
         content = read_file(file_path)
         if not content:
-            logging.warning(f"Hibás vagy üres fájl kihagyva: {file_path}")
+            logging.warning(f"Hibás vagy üres fájl: {file_path}")
+            failed_files.append(file_path)
             continue
 
         doc_hash = calculate_hash(content)
@@ -76,10 +78,20 @@ def index_documents_recursive(path, document_store, document_hashes):
         document = Document(content=content, meta={"name": os.path.basename(file_path)})
         new_documents.append(document)
 
+        # Folyamat kijelzése
+        progress = (i / len(files)) * 100
+        logging.info(f"Feldolgozás: {progress:.2f}% ({i}/{len(files)})")
+
     if new_documents:
-        logging.info(f"{len(new_documents)} új dokumentum hozzáadása az indexhez...")
+        logging.info(f"{len(new_documents)} új dokumentum hozzáadása az indexhez.")
         document_store.write_documents(new_documents)
-        save_hashes(document_hashes)
+        document_store.update_embeddings(retriever, batch_size=batch_size)
+        save_hashes(document_hashes, hash_file)
         logging.info("Új dokumentumok sikeresen hozzáadva az adatbázishoz.")
     else:
         logging.info("Nincsenek új dokumentumok.")
+
+    if failed_files:
+        logging.error(f"Hibás fájlok: {len(failed_files)}")
+        for file in failed_files:
+            logging.error(f"- {file}")
