@@ -90,3 +90,14 @@ if __name__ == "__main__":
         logging.info("Hash fájl sikeresen létrehozva.")
     else:
         logging.error("Hash fájl nem található.")
+
+    # Keresés indítása
+    query = "1. Simple 70 Period Moving Average (closed)"
+    results = search_documents(query, retriever, reader)
+
+    for result in results:
+        print(f"Válasz: {result['answer']}")
+        print(f"Dokumentum: {result['meta']['name']}")
+        print(f"Egyéb információ: {result}")
+
+
