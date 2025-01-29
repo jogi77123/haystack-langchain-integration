@@ -4,6 +4,7 @@ import torch
 from modules.document_handler import load_hashes, save_hashes, index_documents_recursive
 from modules.indexer import initialize_faiss_store
 from modules.search import search_documents  # HIBA JAVÍTÁSA: search_documents importálása
+from modules.indexer import index_documents_with_batches
 from haystack.document_stores import FAISSDocumentStore
 from haystack.nodes import EmbeddingRetriever
 from langchain.vectorstores import FAISS
