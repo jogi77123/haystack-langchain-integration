@@ -1,9 +1,11 @@
 import os
 import logging
+from tqdm import tqdm  # Haladás kijelzéséhez
 from haystack.document_stores import FAISSDocumentStore
 from haystack.nodes import EmbeddingRetriever
 from haystack.schema import Document
-from modules.document_handler import read_file, calculate_hash
+from modules.document_handler import read_file, calculate_hash, save_hashes
+
 
 def initialize_faiss_store(sql_url, embedding_dim):
     """
@@ -29,8 +31,9 @@ def initialize_faiss_store(sql_url, embedding_dim):
         logging.error(f"Hiba a FAISS tároló inicializálásakor: {e}")
         raise RuntimeError("Nem sikerült a FAISS tárolót inicializálni.")
 
-def index_documents_recursive(path, document_store, document_hashes, retriever, batch_size, hash_file):
-    """Dokumentumok rekurzív indexelése."""
+
+def index_documents_with_batches(path, document_store, document_hashes, retriever, batch_size, hash_file):
+    """Dokumentumok rekurzív indexelése batch módszerrel."""
     files = []
     for root, _, file_names in os.walk(path):
         for file_name in file_names:
@@ -65,9 +68,18 @@ def index_documents_recursive(path, document_store, document_hashes, retriever, 
         logging.info(f"Feldolgozás: {progress:.2f}% ({i}/{len(files)})")
 
     if new_documents:
-        logging.info(f"{len(new_documents)} új dokumentum hozzáadása az indexhez.")
-        document_store.write_documents(new_documents)
-        document_store.update_embeddings(retriever, batch_size=batch_size)
+        logging.info(f"{len(new_documents)} új dokumentum indexelése batch feldolgozással...")
+
+        # Batch feldolgozás progress bar-ral
+        for i in tqdm(range(0, len(new_documents), batch_size), desc="Indexelés"):
+            batch = new_documents[i:i + batch_size]  # Kiválasztjuk a batch-et
+            document_store.write_documents(batch)  # Írás az indexbe
+            document_store.update_embeddings(retriever, batch_size=batch_size)  # Embedding frissítés
+
+            total_indexed = i + len(batch)
+            progress = (total_indexed / len(new_documents)) * 100
+            logging.info(f"{len(batch)} dokumentum indexelve. ({i}–{i + len(batch)}) | Haladás: {progress:.2f}%")
+
         save_hashes(document_hashes, hash_file)
         logging.info("Új dokumentumok sikeresen hozzáadva az adatbázishoz.")
     else:

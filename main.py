@@ -83,9 +83,12 @@ if __name__ == "__main__":
     # Hash-ek betöltése
     document_hashes = load_hashes(HASHES_FILE)
 
-    # Dokumentumok indexelése
-    logging.info("Dokumentumok indexelése...")
-    index_documents_recursive(LIBRARY_PATH, document_store, document_hashes, retriever, BATCH_SIZE, HASHES_FILE)
+    # Dokumentumok indexelése batch feldolgozással
+    if new_documents:
+        index_documents_with_batches(document_store, retriever, new_documents)
+        save_hashes(document_hashes, HASHES_FILE)  # Hash fájl frissítése
+    else:
+        logging.info("Nincsenek új dokumentumok az indexeléshez.")
 
     # LangChain FAISS index frissítése
     update_langchain_index(document_store)
