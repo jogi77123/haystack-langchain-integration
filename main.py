@@ -107,9 +107,10 @@ if __name__ == "__main__":
     if results:
         logging.info(f"Keresési eredmények a kérdésre: '{query}'")
         for result in results:
-            answer = result.get('answer', 'Nincs válasz')  # Ha nincs válasz, azt írja ki: "Nincs válasz"
-            score = result.get('score', 0)  # Ha nincs pontszám, akkor 0-t állít be
-            document_name = result.get('meta', {}).get('name', 'Ismeretlen dokumentum')  # Biztonságos meta-kezelés
+            answer = getattr(result, "answer", "Nincs válasz")  # Biztonságosabb lekérés
+            score = getattr(result, "score", 0)
+            document_name = result.meta.get("name", "Ismeretlen dokumentum") if hasattr(result, "meta") else "Ismeretlen dokumentum"
+        
             logging.info(f"- Válasz: {answer} | Pontosság: {score:.2f} | Dokumentum: {document_name}")
     else:
         logging.info(f"Nincs találat a kérdésre: '{query}'")
