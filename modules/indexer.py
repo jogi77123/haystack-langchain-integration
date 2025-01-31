@@ -65,11 +65,18 @@ def index_documents_recursive(path, document_store, document_hashes, retriever, 
         logging.info(f"Feldolgozás: {progress:.2f}% ({i}/{len(files)})")
 
     if new_documents:
-        logging.info(f"{len(new_documents)} új dokumentum hozzáadása az indexhez.")
-        document_store.write_documents(new_documents)
-        document_store.update_embeddings(retriever, batch_size=batch_size)
+        logging.info(f"{len(new_documents)} új dokumentum található, indexelés batch mérete: {batch_size}")
+
+        # Csoportos indexelés
+        for i in range(0, len(new_documents), batch_size):
+            batch = new_documents[i:i + batch_size]
+            logging.info(f"⚡ {len(batch)} dokumentum feldolgozása ({i + 1}-{i + len(batch)})...")
+            document_store.write_documents(batch)
+            document_store.update_embeddings(retriever, batch_size=batch_size)
+
+        # Hash-ek mentése
         save_hashes(document_hashes, hash_file)
-        logging.info("Új dokumentumok sikeresen hozzáadva az adatbázishoz.")
+        logging.info("✅ Az összes új dokumentum sikeresen hozzáadva az adatbázishoz.")
     else:
         logging.info("Nincsenek új dokumentumok.")
 
